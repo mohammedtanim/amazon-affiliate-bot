@@ -1,0 +1,15 @@
+# Amazon Affiliate Telegram Bot 🤖
+
+This Python bot reads affiliate product data from a public Google Sheet (CSV) and auto-posts to a Telegram channel.
+
+## Features
+- ✅ Google Sheets Integration
+- ✅ Auto Captions + Emojis
+- ✅ Shortened Amazon Affiliate Links
+- ✅ Image & Price Support
+
+## How to Run
+
+```bash
+pip install -r requirements.txt
+python bot.py
