@@ -24,7 +24,7 @@ def post_product(product):
     bot.send_photo(chat_id=CHANNEL_ID, photo=img, caption=caption, parse_mode='HTML')
 
 while True:
-    data = fetch_data()
-    for product in data:
-        post_product(product)
-        time.sleep(1800)  # 30 min
+    print("Bot is running... Fetching and posting next product.")
+    post_product()
+    print("Posted. Waiting for 30 minutes...")
+    time.sleep(1800)
