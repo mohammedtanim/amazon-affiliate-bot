@@ -1,78 +1,60 @@
-import asyncio
-import logging
-import random
-from aiohttp import ClientSession
-from aiogram import Bot, Dispatcher, types
+import time
+import requests
+import pandas as pd
+from telegram import Bot
+from io import StringIO
 
-API_TOKEN = "7946365086:AAEQgHfvEhxW9a-IYQI1DjcNcu_TmlOfcSY"
-CHANNEL_ID = "@weselltrend24"
+# Bot Config
+BOT_TOKEN = "7691677105:AAFi6VKImrf-tGmMV2J8I1WZS2LOMgaE7PE"
+CHANNEL_USERNAME = "@weselltrend24"
+CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRgAgZKeyNbpRsQevl0eGBZw2X8W0pMXODgyE0029-ueU0QB9pNYF-nO4_adr04dH78qzXDC6_0oVqz/pub?output=csv"
+POST_INTERVAL = 1800  # 30 minutes
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Initialize bot
+bot = Bot(token=BOT_TOKEN)
 
-# ✅ Verified working images from Amazon
-PRODUCTS = [
-    {
-        "title": "🔥 Bluetooth Headphones",
-        "url": "https://www.amazon.in/dp/B09PZ9GPQM?tag=weselltrend24-21",
-        "image": "https://m.media-amazon.com/images/I/71BM3Xdfg1L._AC_SL1500_.jpg",
-        "description": "Top-rated sound and comfort for your daily tunes!"
-    },
-    {
-        "title": "✨ Bestseller Smart Watch",
-        "url": "https://www.amazon.in/dp/B0B5MLDSHR?tag=weselltrend24-21",
-        "image": "https://m.media-amazon.com/images/I/61vXcZUfVwL._AC_SL1500_.jpg",
-        "description": "Track steps, heart rate, and more – in style!"
-    },
-    {
-        "title": "💡 LED Touch Lamp",
-        "url": "https://www.amazon.in/dp/B084Q4S2MY?tag=weselltrend24-21",
-        "image": "https://m.media-amazon.com/images/I/61gxa1LmuZL._AC_SL1500_.jpg",
-        "description": "Touch control lamp with USB charging port."
-    },
-]
+def fetch_products():
+    response = requests.get(CSV_URL)
+    df = pd.read_csv(StringIO(response.text))
+    return df
 
-async def post_product(bot: Bot, session: ClientSession):
-    try:
-        product = random.choice(PRODUCTS)
-        caption = f"{product['title']}\n\n{product['description']}\n\n🔗 [Buy Now]({product['url']})"
+def post_product(product):
+    title = product["Product Name"]
+    desc = product["Description"]
+    image_url = product["Image URL"]
+    product_url = product["Product URL"]
+    price = product["Price"]
+    
+    caption = f"🛒 <b>{title}</b>
 
-        # 🛡 Try to post image
-        async with session.get(product["image"]) as response:
-            if response.status == 200:
-                await bot.send_photo(
-                    chat_id=CHANNEL_ID,
-                    photo=product["image"],
-                    caption=caption,
-                    parse_mode=types.ParseMode.MARKDOWN
-                )
-            else:
-                # 📩 Fallback to text if image fails
-                await bot.send_message(
-                    chat_id=CHANNEL_ID,
-                    text=caption,
-                    parse_mode=types.ParseMode.MARKDOWN
-                )
+{desc}
 
-        logger.info("✅ Posted successfully!")
+💸 Price: AED{price}
+🔗 <a href='{product_url}'>Buy Now</a>
 
-    except Exception as e:
-        logger.error(f"❌ Error posting: {e}")
+#Amazon #Deals #weselltrend24"
+    
+    bot.send_photo(
+        chat_id=CHANNEL_USERNAME,
+        photo=image_url,
+        caption=caption,
+        parse_mode="HTML"
+    )
 
-async def main():
-    bot = Bot(token=API_TOKEN)
-    dp = Dispatcher(bot)
-    session = ClientSession()
-
-    logger.info("🚀 Bot started. Posting every 60 minutes.")
-    try:
-        while True:
-            await post_product(bot, session)
-            logger.info("⏳ Waiting 60 minutes for next round...")
-            await asyncio.sleep(60 * 60)
-    finally:
-        await bot.session.close()
-        await session.close()
+def main():
+    posted = set()
+    while True:
+        try:
+            products = fetch_products()
+            for _, product in products.iterrows():
+                key = product["Product URL"]
+                if key not in posted:
+                    post_product(product)
+                    posted.add(key)
+                    time.sleep(POST_INTERVAL)
+        except Exception as e:
+            print(f"Error: {e}")
+            time.sleep(60)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
