@@ -25,6 +25,7 @@ def post_product(product):
 
 while True:
     print("Bot is running... Fetching and posting next product.")
-    post_product()
+    product = get_random_product()
+    post_product(product)
     print("Posted. Waiting for 30 minutes...")
     time.sleep(1800)
